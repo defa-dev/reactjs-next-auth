@@ -1,9 +1,10 @@
 import axios, { AxiosError } from "axios";
 import { parseCookies, setCookie } from "nookies";
+import { signOut } from "../context/AuthContext";
 
 let cookies = parseCookies();
 let isRefreshing = false;
-let failedRequestsQueue: any[] = [];
+let failedRequestsQueue = [];
 
 export const api = axios.create({
   baseURL: "http://localhost:3333",
@@ -74,7 +75,10 @@ api.interceptors.response.use(
           });
         });
       } else {
+        signOut();
       }
     }
+
+    return Promise.reject(error);
   }
 );
