@@ -9,13 +9,14 @@ type User = {
   roles: string[];
 };
 
-type SigInCredentials = {
+type singInCredentials = {
   email: string;
   password: string;
 };
 
 type AuthContextData = {
-  sigIn(credentials: SigInCredentials): Promise<void>;
+  singIn: (credentials: singInCredentials) => Promise<void>;
+  signOut: () => void;
   user: User;
   isAuthenticated: boolean;
 };
@@ -26,9 +27,13 @@ type AuthProviderProps = {
 
 export const AuthContext = createContext({} as AuthContextData);
 
+let authChannel: BroadcastChannel;
+
 export function signOut() {
   destroyCookie(undefined, "nextauth.token");
   destroyCookie(undefined, "nextauth.refreshToken");
+
+  authChannel.postMessage("signOut");
 
   Router.push("/");
 }
@@ -36,6 +41,20 @@ export function signOut() {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User>();
   const isAuthenticated = !!user;
+
+  useEffect(() => {
+    authChannel = new BroadcastChannel("auth");
+
+    authChannel.onmessage = (message) => {
+      switch (message.data) {
+        case "signOut":
+          signOut();
+          break;
+        default:
+          break;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const { "nextauth.token": token } = parseCookies();
@@ -48,12 +67,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setUser({ email, permissions, roles });
         })
         .catch(() => {
-          signOut()
+          signOut();
         });
     }
   }, []);
 
-  async function sigIn({ email, password }: SigInCredentials) {
+  async function singIn({ email, password }: singInCredentials) {
     try {
       const response = await api.post("sessions", {
         email,
@@ -86,7 +105,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   return (
-    <AuthContext.Provider value={{ sigIn, isAuthenticated, user }}>
+    <AuthContext.Provider value={{ singIn, signOut, isAuthenticated, user }}>
       {children}
     </AuthContext.Provider>
   );

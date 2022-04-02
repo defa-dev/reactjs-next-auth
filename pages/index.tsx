@@ -9,7 +9,7 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const { sigIn } = useContext(AuthContext);
+  const { singIn } = useContext(AuthContext);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -19,7 +19,7 @@ export default function Home() {
       password,
     };
 
-    await sigIn(data);
+    await singIn(data);
   }
 
   return (
